@@ -27,19 +27,20 @@ char charToSend[DATA_TO_SEND_SIZE+1];
 int main(void){
 	//Initialization
 	uart_init();
-	DDRC |= (1<<PC5);
-	PORTC |= (1<<PC5);
-	initGyroSPI();
+	DDRC |= (1<<PC3);
+	PORTC |= (1<<PC3);
+	initSPI();
 	initClickPins();
 	timer_init();
 	charToSend[DATA_TO_SEND_SIZE]='\0';
-	gyroCalibration(hand);
+//	gyroCalibration(hand);
 	sei();
 
 	while(1){
-		//PORTC ^= (1<<PC5);
+		PORTC ^= (1<<PC3);
 
-		//_delay_ms(100);
+//		getPositionDataACC(&DataAcc[X],&DataAcc[Y],&DataAcc[Z]);
+		_delay_ms(500);
 
 //		uart_putc(9);
 		//uart_puts("licznik = ");//_delay_ms(10);
@@ -51,13 +52,14 @@ int main(void){
 
 ISR(TIMER0_OVF_vect)
 {
-	//uart_puts(" SPI X divided = ");
-	PORTC ^= (1<<PC5);
-	getPositionDataSPI(&DataGyro[X],&DataGyro[Y],&DataGyro[Z]);
+	uart_puts(" SPI X divided = ");
+	//PORTC ^= (1<<PC3);
+	getPositionDataGyro(&DataGyro[X],&DataGyro[Y],&DataGyro[Z]);
+	getPositionDataACC(&DataAcc[X],&DataAcc[Y],&DataAcc[Z]);
 	fillHandPos(hand,DataAcc[X],DataAcc[Y],DataAcc[Z],DataGyro[X],DataGyro[Y],DataGyro[Z]);
 	fillDataToSend(charToSend,DATA_TO_SEND_SIZE,hand);
 	uart_puts(charToSend);
-	uart_putc(11);
-	uart_putc(13);
+	uart_putc('\n');
+	uart_putc(CARRIAGE_RETURN);
 
 }

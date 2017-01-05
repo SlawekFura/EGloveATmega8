@@ -12,10 +12,13 @@
 #include "../MYUART/myuart.h"
 
 
-#define LSM303_ACC_ADDRESS (0x19 << 1) // adres akcelerometru: 0011 001x
-#define LSM303_ACC_CTRL_REG1_A 0x20 // rejestr ustawien 1
-#define LSM303_ACC_XYZ_ENABLE 0x07 // 0000 0100
-#define LSM303_ACC_100HZ 0x50 // 0101 0000
+#define LSM303_ACC_ADDRESS (0x1D << 1) // adres akcelerometru: 0011 001x
+#define LSM303_ACC_CTRL_REG1 0x20 // rejestr ustawien 1
+#define LSM303_ACC_XYZ_ENABLE 0x07 // 0000 0111
+#define LSM303_ACC_100HZ 0x60 //  0110 0000
+#define LSM303_ACC_NOBLOCK 0x08
+#define LSM303_ACC_READ 0x80
+#define LSM303_ACC_MULTI_READ 0x80 | 0x40
 #define LSM303_ACC_X_H 0x29 // wyzszy bajt danych osi X
 #define LSM303_ACC_X_L 0x28 // nizszy bajt danych osi X
 #define LSM303_ACC_Y_H 0x2B // wyzszy bajt danych osi Y
@@ -23,6 +26,7 @@
 #define LSM303_ACC_Z_H 0x2D // wyzszy bajt danych osi Z
 #define LSM303_ACC_Z_L 0x2C // nizszy bajt danych osi Z
 #define LSM303_ACC_RESOLUTION 2
+#define LSM303_ACC__WHO_AM_I 0x0F
 
 
 #define L3GD20_GYRO_CTRL_REG1 0x20 // rejestr ustawien 1
@@ -39,29 +43,32 @@
 #define L3GD20_GYRO_WHO_AM_I 0x0F
 
 #define PORTSPI DDRB
-#define PORTSS DDRB
+#define PORTSSGYRO DDRB
+#define PORTSSACC DDRC
 #define PINMISO PB4
 #define PINMOSI PB3
 #define PINSCK PB5
 
-#define PINCS PB2
+#define PINCSGYRO PB2
+#define PINCSACC PC4
 
-#define SPI_SET PORTB |= (1<<PINCS)
-#define SPI_RESET PORTB &= ~(1<<PINCS)
+#define SPIGYRO_SET PORTB |= (1<<PINCSGYRO)
+#define SPIGYRO_RESET PORTB &= ~(1<<PINCSGYRO)
+
+#define SPIACC_SET PORTC |= (1<<PINCSACC)
+#define SPIACC_RESET PORTC &= ~(1<<PINCSACC)
 
 uint8_t AccSettings;
 uint8_t sendToGyro[10];
 uint8_t * pSendSPI[10];
 
-//void initAccI2C(I2C_HandleTypeDef * hi2c);
-void initGyroSPI();
-
+void initSPI();
 int8_t getSPI();
 void sendSPI(int8_t byte);
-//void getPositionDataACC(I2C_HandleTypeDef *hi2c, int16_t *pDataGetXAxis,
-//		int16_t *pDataGetYAxis,  int16_t *pDataGetZAxis, uint32_t Timeout);
+void getPositionDataACC( int16_t *pDataGetXAxis, int16_t *pDataGetYAxis,
+						 int16_t *pDataGetZAxis);
 
-void getPositionDataSPI(int16_t *pDataGetXAxis,
+void getPositionDataGyro(int16_t *pDataGetXAxis,
 		int16_t *pDataGetYAxis,  int16_t *pDataGetZAxis);
 
 

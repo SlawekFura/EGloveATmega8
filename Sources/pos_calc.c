@@ -127,10 +127,10 @@ void gyroCalibration(HandPos* vhand){
 	int32_t DataGyroTempZSum = 0;
 
 	for(size_t i = 0; i<20; i++)
-			getPositionDataSPI(&DataGyroTempX,&DataGyroTempY,&DataGyroTempZ);
+			getPositionDataGyro(&DataGyroTempX,&DataGyroTempY,&DataGyroTempZ);
 
 	for(size_t i = 0; i<GYRO_CALIBRATION_SIZE; i++){
-		getPositionDataSPI(&DataGyroTempX,&DataGyroTempY,&DataGyroTempZ);
+		getPositionDataGyro(&DataGyroTempX,&DataGyroTempY,&DataGyroTempZ);
 		DataGyroTempXSum+=DataGyroTempX;
 		DataGyroTempZSum+=DataGyroTempZ;
 		uart_putc('\n');

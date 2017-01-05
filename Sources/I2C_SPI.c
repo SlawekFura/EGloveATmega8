@@ -9,7 +9,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
-uint8_t AccSettings = LSM303_ACC_XYZ_ENABLE | LSM303_ACC_100HZ;
+uint8_t AccSettings = LSM303_ACC_XYZ_ENABLE | LSM303_ACC_100HZ|LSM303_ACC_NOBLOCK;
 
 enum {GyroSettings = L3GD20_GYRO_190HZ_25BW | L3GD20_GYRO_ENABLE | L3GD20_GYRO_ZXY_ENABLE};
 uint8_t sendToGyro[10]= {L3GD20_GYRO_CTRL_REG1,
@@ -41,25 +41,43 @@ int8_t getSPI(){
     // Return received data
     return (int8_t)SPDR;
 }
-void initGyroSPI(){
-	DDRB = (1<<PINMOSI) | (1<<PINSCK) | (1<<PINCS);
+void initSPI(){
+	DDRB = (1<<PINMOSI) | (1<<PINSCK) | (1<<PINCSGYRO);
+	DDRC |= (1<<PINCSACC);
+	SPIACC_SET;	SPIGYRO_SET;
 	SPCR = ( 1 << SPE ) | ( 1 << MSTR ) /*| ( 1 << SPR1 )*/ | ( 1 << SPR0 );
 
-	SPI_RESET;
+	SPIGYRO_RESET;
 	sendSPI(L3GD20_GYRO_CTRL_REG1);
 	sendSPI(GyroSettings);
-	SPI_SET;
+
+	SPIGYRO_SET;
+	_delay_ms(10);
+
+	SPIACC_RESET;
+	sendSPI(LSM303_ACC_CTRL_REG1);
+	sendSPI(AccSettings);
+
+	uart_putlong(getSPI(),10);
+	uart_puts(" ");
+	SPIACC_SET;
+
+	_delay_ms(10);
+
+	SPIACC_RESET;
+	sendSPI(LSM303_ACC__WHO_AM_I|128);
+	sendSPI(255);
+	uart_putlong(getSPI(),10);
+	SPIACC_SET;
 }
 
-void getPositionDataSPI(int16_t *pDataGetXAxis,int16_t *pDataGetYAxis,
+void getPositionDataGyro(int16_t *pDataGetXAxis,int16_t *pDataGetYAxis,
 		int16_t *pDataGetZAxis){
-
 	int8_t DataGetAxisTempHigh = 0;
 	int8_t DataGetAxisTempLow = 0;
 
-	SPI_RESET;
+	SPIGYRO_RESET;
 	sendSPI(**(pSendSPI + 2));
-
 	for (int var = 0; var < 3; ++var) {
 		sendSPI(255);
 		DataGetAxisTempLow = getSPI();
@@ -69,33 +87,54 @@ void getPositionDataSPI(int16_t *pDataGetXAxis,int16_t *pDataGetYAxis,
 		switch (var){
 		case 0:
 			*pDataGetXAxis = DataGetAxisTempLow + (DataGetAxisTempHigh<<8);
-		//	uart_puts("SPI X = ");
-		//	uart_putlong(*pDataGetXAxis,10);
 			break;
 		case 1:
 			*pDataGetYAxis = /*DataGetAxisTempLow +*/ (DataGetAxisTempHigh<<8);
-		//	uart_putc(9);
-		//	uart_puts(" SPI Y = ");
-		//	uart_putlong(*pDataGetYAxis,10);
 			break;
 		case 2:
 			*pDataGetZAxis = /*DataGetAxisTempLow +*/ (DataGetAxisTempHigh <<8);
-//			uart_putc(9);
-//			uart_puts(" SPI Z = ");
-//			uart_putlong(*pDataGetZAxis,10);
-//			uart_putc('\n');
-//			uart_putc(13);
 			break;
 		}
 	}
 	_delay_us(5);
+	SPIGYRO_SET;
+}
 
-	SPI_SET;
-//				uart_putc(9);
-//				uart_puts(" SPI Z = ");
-//				uart_putlong(*pDataGetZAxis,10);
-//				uart_putc('\n');
-//				uart_putc(13);
+void getPositionDataACC( int16_t *pDataGetXAxis, int16_t *pDataGetYAxis,
+						 int16_t *pDataGetZAxis){
+
+	int8_t DataGetAxisTempHigh = 0;
+	int8_t DataGetAxisTempLow = 0;
+
+	SPIACC_RESET;
+	sendSPI(LSM303_ACC_X_L | LSM303_ACC_MULTI_READ);
+	for (int var = 0; var < 3; ++var) {
+		sendSPI(255);
+		DataGetAxisTempLow = getSPI();
+		sendSPI(255);
+		DataGetAxisTempHigh = getSPI();
+
+		switch (var){
+		case 0:
+			*pDataGetXAxis = DataGetAxisTempLow + (DataGetAxisTempHigh<<8);
+			break;
+		case 1:
+			*pDataGetYAxis = /*DataGetAxisTempLow +*/ (DataGetAxisTempHigh<<8);
+			break;
+		case 2:
+			*pDataGetZAxis = /*DataGetAxisTempLow +*/ (DataGetAxisTempHigh <<8);
+			break;
+		}
+	}
+	_delay_us(5);
+	SPIACC_SET;
+	uart_putlong(*pDataGetXAxis,10);
+	uart_putc(HORIZONTAL_TAB);
+	uart_putlong(*pDataGetYAxis,10);
+	uart_putc(HORIZONTAL_TAB);
+	uart_putlong(*pDataGetZAxis,10);
+	uart_putc('\n');
+	uart_putc(CARRIAGE_RETURN);
 }
 
 
