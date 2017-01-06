@@ -6,12 +6,13 @@
  */
 
 #include "../Includes/pos_calc.h"
-#include "../Includes/I2C_SPI.h"
 #include "../MYUART/myuart.h"
 #include <string.h>
 #include <stdlib.h>
 
 #include <limits.h>
+
+#include "../Includes/ADC_SPI.h"
 const uint32_t posX_coefficient =  (POS_PRESC)/ 768;
 const uint32_t posZ_coefficient =  (POS_PRESC)/1366;
 
@@ -29,6 +30,8 @@ void fillHandPos(HandPos * vhand,int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 	vhand->corrAccDataZ[vhand->accCount] = vaccZ;
 	vhand->leftButtonState = (PIN_LEFT_CLICK_STATE)?0:1;
 
+	rotateCoordinate(vaccX,vaccY,vaccZ,&vgyroX,&vgyroZ);
+
 	vhand->posX -= (vgyroX + vhand->posXPrev - 2*vhand->posXcalibration)*RESOLUTION/2;//dzielenie przez okolo 70000 //INT16_MAX*250*3.1415/180/TIMER_PRESCALER*1.19)*250;
 	vhand->posZ += (vgyroZ + vhand->posZPrev - 2*vhand->posZcalibration)*RESOLUTION/2 ;//INT16_MAX*250*3.1415/180/TIMER_PRESCALER*1.19 )*250;
 	vhand->posXPrev = vgyroX;
@@ -42,7 +45,7 @@ void fillHandPos(HandPos * vhand,int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 	vhand->posXdivided = vhand->posX/posX_coefficient;
 	vhand->posZdivided = vhand->posZ/posZ_coefficient;
 
-
+	adcScrollProcessing(vhand);
 //	uart_putc(13);
 //	uart_putc(11);
 //	uart_puts(" SPI X divided = ");
@@ -153,4 +156,48 @@ void gyroCalibration(HandPos* vhand){
 	uart_putc(HORIZONTAL_TAB);
 	uart_puts(" posZcalibration = ");
 	uart_putlong(vhand->posZcalibration,10);
+}
+
+void rotateCoordinate(int16_t vaccX, int16_t vaccY,int16_t vaccZ,
+					int16_t *vGyroARot, int16_t *vGyroBRot){
+	int16_t GyroARotTemp = 0,GyroBRotTemp = 0;
+	GyroARotTemp = /*cos(vangleRotAxis)*/(int32_t)vaccZ*(*vGyroARot)*2/INT16_MAX + /*sin(vangleRotAxis)*/(int32_t)vaccY*(*vGyroBRot)*2/INT16_MAX;
+	GyroBRotTemp -= /*-sin(vangleRotAxis)*/(int32_t)-vaccY*(*vGyroARot)*2/INT16_MAX + /*cos(vangleRotAxis)*/(int32_t)vaccZ*(*vGyroBRot)*2/INT16_MAX;
+	*vGyroARot = GyroARotTemp;
+	*vGyroBRot = GyroBRotTemp;
+
+//	uart_puts("cos(alfa) = ");
+//	if(vaccZ<0)
+//		uart_putc('-');
+//	uart_putlong((int32_t)abs(vaccZ)*2/INT16_MAX,10);uart_putc('.');
+//	uart_putlong(((int32_t)abs(vaccZ)*2*10/INT16_MAX)%10,10);
+//	uart_putlong(((int32_t)abs(vaccZ)*2*100/INT16_MAX)%10,10);
+//	uart_putc(HORIZONTAL_TAB);
+//	uart_putc(HORIZONTAL_TAB);
+//	uart_puts("sin(alfa) = ");
+//	if(vaccY<0)
+//		uart_putc('-');
+//	uart_putlong((int32_t)abs(vaccY)*2/INT16_MAX,10);uart_putc('.');
+//	uart_putlong(((int32_t)abs(vaccY)*2*10/INT16_MAX)%10,10);
+//	uart_putlong(((int32_t)abs(vaccY)*2*100/INT16_MAX)%10,10);
+//	uart_putc(HORIZONTAL_TAB);
+//
+//	uart_putc(CARRIAGE_RETURN);
+//	uart_putc('\n');
+}
+void adcScrollProcessing(HandPos * vhand){
+
+	vhand->ADCCount++;
+	vhand->ADCCount %= ADC_SCROLL_ARR_SIZE;
+
+	if(!(vhand->ADCCount % 100)) {
+		vhand->valADCavg = getAdcScrollData();
+		if( vhand->valADCavg > ADC_LOWER_LIMIT && vhand->valADCavg < ADC_UPPER_LIMIT){
+			vhand->valADCavgTemp0 = vhand->valADCavgTemp1;
+			vhand->valADCavgTemp1 = vhand->valADCavg;
+			vhand->valADCavgTempOUT = (vhand->valADCavgTemp1 - vhand->valADCavgTemp0)/4;
+		}
+		else
+			vhand->valADCavgTempOUT = 0;
+	}
 }

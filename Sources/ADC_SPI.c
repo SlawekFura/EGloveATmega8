@@ -4,10 +4,11 @@
  *  Created on: 26 sie 2016
  *      Author: Mariusz
  */
-#include "../Includes/I2C_SPI.h"
 #include <stdlib.h>
 #include <avr/io.h>
 #include <util/delay.h>
+#include <math.h>
+#include "../Includes/ADC_SPI.h"
 
 uint8_t AccSettings = LSM303_ACC_XYZ_ENABLE | LSM303_ACC_100HZ|LSM303_ACC_NOBLOCK;
 
@@ -119,22 +120,36 @@ void getPositionDataACC( int16_t *pDataGetXAxis, int16_t *pDataGetYAxis,
 			*pDataGetXAxis = DataGetAxisTempLow + (DataGetAxisTempHigh<<8);
 			break;
 		case 1:
-			*pDataGetYAxis = /*DataGetAxisTempLow +*/ (DataGetAxisTempHigh<<8);
+			*pDataGetYAxis = DataGetAxisTempLow + (DataGetAxisTempHigh<<8);
 			break;
 		case 2:
-			*pDataGetZAxis = /*DataGetAxisTempLow +*/ (DataGetAxisTempHigh <<8);
+			*pDataGetZAxis = DataGetAxisTempLow + (DataGetAxisTempHigh <<8);
 			break;
 		}
 	}
 	_delay_us(5);
 	SPIACC_SET;
-	uart_putlong(*pDataGetXAxis,10);
-	uart_putc(HORIZONTAL_TAB);
-	uart_putlong(*pDataGetYAxis,10);
-	uart_putc(HORIZONTAL_TAB);
-	uart_putlong(*pDataGetZAxis,10);
-	uart_putc('\n');
-	uart_putc(CARRIAGE_RETURN);
+//	uart_putlong(*pDataGetXAxis,10);
+//	uart_putc(HORIZONTAL_TAB);
+//	uart_putlong(*pDataGetYAxis,10);
+//	uart_putc(HORIZONTAL_TAB);
+//	uart_putlong(*pDataGetZAxis,10);
+//	uart_putc('\n');
+//	uart_putc(CARRIAGE_RETURN);
 }
+
+void initADC(){
+ADMUX|=(1<<REFS0)|(1<<MUX2)|(1<<MUX0); //AVCC with external capacitor at AREF pin, PC5 as analog input
+ADCSRA|=(1<<ADEN)|(1<<ADPS2)|(1<<ADPS1); //prescaler + adcON
+}
+
+int16_t getAdcScrollData(){
+
+	ADCSRA |= (1<<ADSC);
+	while(ADCSRA & (1<<ADSC));
+	//*vdata=ADCW;
+	return ADCW;
+}
+
 
 

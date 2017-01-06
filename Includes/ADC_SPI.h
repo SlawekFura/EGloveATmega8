@@ -67,10 +67,10 @@ int8_t getSPI();
 void sendSPI(int8_t byte);
 void getPositionDataACC( int16_t *pDataGetXAxis, int16_t *pDataGetYAxis,
 						 int16_t *pDataGetZAxis);
-
 void getPositionDataGyro(int16_t *pDataGetXAxis,
 		int16_t *pDataGetYAxis,  int16_t *pDataGetZAxis);
-
+void initADC();
+int16_t getAdcScrollData();
 
 
 #endif /* I2C_SPI_H_ */
