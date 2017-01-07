@@ -99,6 +99,13 @@ void getPositionDataGyro(int16_t *pDataGetXAxis,int16_t *pDataGetYAxis,
 	}
 	_delay_us(5);
 	SPIGYRO_SET;
+//		uart_putlong(*pDataGetXAxis,10);
+//		uart_putc(HORIZONTAL_TAB);
+//		uart_putlong(*pDataGetYAxis,10);
+//		uart_putc(HORIZONTAL_TAB);
+//		uart_putlong(*pDataGetZAxis,10);
+//		uart_putc('\n');
+//		uart_putc(CARRIAGE_RETURN);
 }
 
 void getPositionDataACC( int16_t *pDataGetXAxis, int16_t *pDataGetYAxis,

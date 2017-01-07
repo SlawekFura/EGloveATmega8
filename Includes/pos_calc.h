@@ -63,7 +63,7 @@ void fillHandPos(HandPos * vhand,int16_t vaccX,int16_t vaccY,int16_t vaccZ,
 char* dataToSend(HandPos vhand);
 void rotateCoordinate(int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 					int16_t *vGyroARot, int16_t *vGyroBRot);
-void fillDataToSend(char *arr,int16_t arrSize,HandPos * vhand);
+void fillDataToSend(char *arr,int16_t arrSize,const HandPos * vhand);
 void initClickPins();
 void gyroCalibration(HandPos* vhand);
 void adcScrollProcessing(HandPos * vhand);

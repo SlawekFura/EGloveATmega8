@@ -9,10 +9,9 @@
 #include "../MYUART/myuart.h"
 #include <string.h>
 #include <stdlib.h>
-
 #include <limits.h>
-
 #include "../Includes/ADC_SPI.h"
+#include <util/delay.h>
 const uint32_t posX_coefficient =  (POS_PRESC)/ 768;
 const uint32_t posZ_coefficient =  (POS_PRESC)/1366;
 
@@ -32,8 +31,8 @@ void fillHandPos(HandPos * vhand,int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 
 	rotateCoordinate(vaccX,vaccY,vaccZ,&vgyroX,&vgyroZ);
 
-	vhand->posX -= (vgyroX + vhand->posXPrev - 2*vhand->posXcalibration)*RESOLUTION/2;//dzielenie przez okolo 70000 //INT16_MAX*250*3.1415/180/TIMER_PRESCALER*1.19)*250;
-	vhand->posZ += (vgyroZ + vhand->posZPrev - 2*vhand->posZcalibration)*RESOLUTION/2 ;//INT16_MAX*250*3.1415/180/TIMER_PRESCALER*1.19 )*250;
+	vhand->posX -= (vgyroX + vhand->posXPrev + 2*vhand->posXcalibration)*RESOLUTION/2;//dzielenie przez okolo 70000 //INT16_MAX*250*3.1415/180/TIMER_PRESCALER*1.19)*250;
+	vhand->posZ -= (vgyroZ + vhand->posZPrev + 2*vhand->posZcalibration)*RESOLUTION/2 ;//INT16_MAX*250*3.1415/180/TIMER_PRESCALER*1.19 )*250;
 	vhand->posXPrev = vgyroX;
 	vhand->posZPrev = vgyroZ;
 
@@ -46,6 +45,7 @@ void fillHandPos(HandPos * vhand,int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 	vhand->posZdivided = vhand->posZ/posZ_coefficient;
 
 	adcScrollProcessing(vhand);
+
 //	uart_putc(13);
 //	uart_putc(11);
 //	uart_puts(" SPI X divided = ");
@@ -56,7 +56,7 @@ void fillHandPos(HandPos * vhand,int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 
 }
 
-void fillDataToSend(char *arr,int16_t arrSize,HandPos * vhand){
+void fillDataToSend(char *arr,int16_t arrSize,const HandPos * vhand){
 	for(int i = 0;;){
 		if(i>=arrSize)
 			break;
@@ -86,8 +86,7 @@ void fillDataToSend(char *arr,int16_t arrSize,HandPos * vhand){
 		if(i==14)
 		for(int j=0;j<4;j++){
 			int m = j;
-			if(j>0&&vhand->valADCavgTempOUT<0)
-				m--;
+			if(j>0&&vhand->valADCavgTempOUT<0)m--;
 			int k = (int16_t)(vhand->valADCavgTempOUT/POW(10,2-m))%10;
 			if(j==0&&vhand->valADCavgTempOUT<0){
 				arr[i]='-';
@@ -104,7 +103,6 @@ void fillDataToSend(char *arr,int16_t arrSize,HandPos * vhand){
 				itoa(abs(k),arr+i,10);
 			}
 		};
-
 	}
 }
 
@@ -129,7 +127,7 @@ void gyroCalibration(HandPos* vhand){
 	int32_t DataGyroTempXSum = 0;
 	int32_t DataGyroTempZSum = 0;
 
-	for(size_t i = 0; i<20; i++)
+	for(size_t i = 0; i<200; i++)
 			getPositionDataGyro(&DataGyroTempX,&DataGyroTempY,&DataGyroTempZ);
 
 	for(size_t i = 0; i<GYRO_CALIBRATION_SIZE; i++){
@@ -162,11 +160,13 @@ void rotateCoordinate(int16_t vaccX, int16_t vaccY,int16_t vaccZ,
 					int16_t *vGyroARot, int16_t *vGyroBRot){
 	int16_t GyroARotTemp = 0,GyroBRotTemp = 0;
 	GyroARotTemp = /*cos(vangleRotAxis)*/(int32_t)vaccZ*(*vGyroARot)*2/INT16_MAX + /*sin(vangleRotAxis)*/(int32_t)vaccY*(*vGyroBRot)*2/INT16_MAX;
-	GyroBRotTemp -= /*-sin(vangleRotAxis)*/(int32_t)-vaccY*(*vGyroARot)*2/INT16_MAX + /*cos(vangleRotAxis)*/(int32_t)vaccZ*(*vGyroBRot)*2/INT16_MAX;
+	GyroBRotTemp = /*-sin(vangleRotAxis)*/(int32_t)-vaccY*(*vGyroARot)*2/INT16_MAX + /*cos(vangleRotAxis)*/(int32_t)vaccZ*(*vGyroBRot)*2/INT16_MAX;
 	*vGyroARot = GyroARotTemp;
 	*vGyroBRot = GyroBRotTemp;
 
-//	uart_puts("cos(alfa) = ");
+//	uart_puts("vccx = ");uart_putlong(vaccX,10);
+//	uart_puts("    vccy = ");uart_putlong(vaccY,10);
+//	uart_puts("    cos(alfa) = ");
 //	if(vaccZ<0)
 //		uart_putc('-');
 //	uart_putlong((int32_t)abs(vaccZ)*2/INT16_MAX,10);uart_putc('.');
@@ -190,7 +190,7 @@ void adcScrollProcessing(HandPos * vhand){
 	vhand->ADCCount++;
 	vhand->ADCCount %= ADC_SCROLL_ARR_SIZE;
 
-	if(!(vhand->ADCCount % 100)) {
+	if(!(vhand->ADCCount % 10)) {
 		vhand->valADCavg = getAdcScrollData();
 		if( vhand->valADCavg > ADC_LOWER_LIMIT && vhand->valADCavg < ADC_UPPER_LIMIT){
 			vhand->valADCavgTemp0 = vhand->valADCavgTemp1;
