@@ -9,6 +9,7 @@
 #include <util/delay.h>
 #include <math.h>
 #include "../Includes/ADC_SPI.h"
+#include "../MYUART/myuart.h"
 
 uint8_t AccSettings = LSM303_ACC_XYZ_ENABLE | LSM303_ACC_100HZ|LSM303_ACC_NOBLOCK;
 
@@ -26,10 +27,6 @@ uint8_t sendToGyro[10]= {L3GD20_GYRO_CTRL_REG1,
 uint8_t * pSendSPI[10] = {sendToGyro, &sendToGyro[1], &sendToGyro[2],
 		&sendToGyro[3], &sendToGyro[4], &sendToGyro[5],
 		&sendToGyro[6], &sendToGyro[7], &sendToGyro[8], &sendToGyro[9]};
-
-//HAL_StatusTypeDef initAccI2C(I2C_HandleTypeDef * hi2c){
-//	  return HAL_I2C_Mem_Write(hi2c, LSM303_ACC_ADDRESS, LSM303_ACC_CTRL_REG1_A, 1, &AccSettings, 1, 100);
-//}
 
 void sendSPI(int8_t byte){
 	SPDR = byte;
@@ -146,7 +143,7 @@ void getPositionDataACC( int16_t *pDataGetXAxis, int16_t *pDataGetYAxis,
 }
 
 void initADC(){
-ADMUX|=(1<<REFS0)|(1<<MUX2)|(1<<MUX0); //AVCC with external capacitor at AREF pin, PC5 as analog input
+ADMUX|=(1<<REFS0)/*|(1<<REFS1)*/|(1<<MUX2)|(1<<MUX0); //Internal 2.56V Voltage Reference with external capacitor at AREF pin, PC5 as analog input
 ADCSRA|=(1<<ADEN)|(1<<ADPS2)|(1<<ADPS1); //prescaler + adcON
 }
 
@@ -154,7 +151,10 @@ int16_t getAdcScrollData(){
 
 	ADCSRA |= (1<<ADSC);
 	while(ADCSRA & (1<<ADSC));
-	//*vdata=ADCW;
+//	uart_puts("ADC = ");
+//	uart_putlong(ADCW,10);
+//	uart_putc('\n');
+//	uart_putc(UART_CARRIAGE_RETURN);
 	return ADCW;
 }
 

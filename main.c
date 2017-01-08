@@ -35,7 +35,7 @@ int main(void){
 	timer_init();
 	initADC();
 	charToSend[DATA_TO_SEND_SIZE]='\0';
-	gyroCalibration(hand);
+	//gyroCalibration(hand);
 	sei();
 
 	while(1){
@@ -58,7 +58,7 @@ ISR(TIMER0_OVF_vect)
 	fillDataToSend(charToSend,DATA_TO_SEND_SIZE,hand);
 	uart_puts(charToSend);
 	uart_putc('\n');
-	uart_putc(CARRIAGE_RETURN);
+	uart_putc(UART_CARRIAGE_RETURN);
 	if(!(a%3))
 	PORTC ^= (1<<PC3);
 //	uart_putlong(getAdcScrollData(5),10);
